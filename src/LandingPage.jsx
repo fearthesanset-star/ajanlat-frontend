@@ -4,38 +4,46 @@ import { useState } from "react";
 
 function LandingPage() {
   const [email, setEmail] = useState("");
-
   const [accepted, setAccepted] = useState(false);
 
-const handleSubscribe = async (e) => {
-  e.preventDefault();
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
 
-  if (!email.trim()) {
-    alert("Adj meg egy email címet!");
-    return;
-  }
-
-  try {
-    const res = await fetch("https://ajanlat-app.onrender.com/subscribe", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    const data = await res.json();
-
-    if (data.error) {
-      alert(data.error);
-    } else {
-      alert("Sikeres feliratkozás!");
-      setEmail("");
+    if (!email.trim()) {
+      alert("Adj meg egy email címet!");
+      return;
     }
-  } catch (err) {
-    alert("Hiba történt, próbáld újra.");
-  }
-};
+
+    if (!accepted) {
+      alert("El kell fogadnod az adatkezelési tájékoztatót!");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://ajanlat-app.onrender.com/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          accepted: accepted,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert("Sikeres feliratkozás!");
+        setEmail("");
+        setAccepted(false);
+      }
+    } catch (err) {
+      alert("Hiba történt, próbáld újra.");
+    }
+  };
 
   return (
     <div className="landing">
@@ -222,6 +230,30 @@ const handleSubscribe = async (e) => {
               </button>
             </form>
 
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginTop: "14px",
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+              />
+              <span>
+                Elfogadom az{" "}
+                <a href="/privacy" target="_blank" rel="noreferrer">
+                  adatkezelési tájékoztatót
+                </a>
+                .
+              </span>
+            </label>
+
             <p className="subscribe-note">
               Nincs spam. Csak fontos frissítések és indulási értesítés.
             </p>
@@ -233,17 +265,3 @@ const handleSubscribe = async (e) => {
 }
 
 export default LandingPage;
-
-<label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "10px" }}>
-  <input
-    type="checkbox"
-    checked={accepted}
-    onChange={(e) => setAccepted(e.target.checked)}
-  />
-  Elfogadom az adatkezelési tájékoztatót
-</label>
-
-if (!accepted) {
-  alert("El kell fogadnod az adatkezelési tájékoztatót!");
-  return;
-}
