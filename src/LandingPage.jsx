@@ -5,6 +5,8 @@ import { useState } from "react";
 function LandingPage() {
   const [email, setEmail] = useState("");
 
+  const [accepted, setAccepted] = useState(false);
+
 const handleSubscribe = async (e) => {
   e.preventDefault();
 
@@ -231,3 +233,17 @@ const handleSubscribe = async (e) => {
 }
 
 export default LandingPage;
+
+<label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "10px" }}>
+  <input
+    type="checkbox"
+    checked={accepted}
+    onChange={(e) => setAccepted(e.target.checked)}
+  />
+  Elfogadom az adatkezelési tájékoztatót
+</label>
+
+if (!accepted) {
+  alert("El kell fogadnod az adatkezelési tájékoztatót!");
+  return;
+}
