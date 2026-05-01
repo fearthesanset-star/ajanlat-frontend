@@ -13,6 +13,7 @@ function App() {
 
   const [projectId, setProjectId] = useState(null);
   const [projectName, setProjectName] = useState("");
+  const [validUntil, setValidUntil] = useState("");
   const [activeProjectName, setActiveProjectName] = useState("");
   const [projectItems, setProjectItems] = useState([]);
   const [projectTotal, setProjectTotal] = useState(0);
@@ -155,28 +156,31 @@ function App() {
     }
   };
 
-  const createProject = async () => {
-    if (!projectName.trim()) {
-      alert("Adj meg projektnevet!");
-      return;
-    }
+const createProject = async () => {
+  if (!projectName.trim()) {
+    alert("Adj meg projektnevet!");
+    return;
+  }
 
-    try {
-      const res = await fetch(
-        `https://ajanlat-app.onrender.com/projects?name=${encodeURIComponent(projectName)}`,
-        { method: "POST" }
-      );
+  try {
+    const res = await fetch(
+      `https://ajanlat-app.onrender.com/projects?name=${encodeURIComponent(
+        projectName
+      )}&valid_until=${encodeURIComponent(validUntil)}`,
+      { method: "POST" }
+    );
 
-      const data = await res.json();
-      setProjectId(data.id);
-      setActiveProjectName(data.name);
-      setProjectName("");
-      setProjectItems([]);
-      setProjectTotal(0);
-    } catch (err) {
-      console.error("Projekt létrehozási hiba:", err);
-    }
-  };
+    const data = await res.json();
+    setProjectId(data.id);
+    setActiveProjectName(data.name);
+    setProjectName("");
+    setValidUntil("");
+    setProjectItems([]);
+    setProjectTotal(0);
+  } catch (err) {
+    console.error("Projekt létrehozási hiba:", err);
+  }
+};
 
   const createTemplate = async () => {
     if (!templateName.trim()) {
@@ -366,19 +370,34 @@ function App() {
           </div>
 
           <div className="card section-space">
-            <h2>Projekt létrehozása</h2>
-            <div className="inline-row">
-              <input
-                type="text"
-                placeholder="Projekt neve"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                className="medium-input"
-              />
-              <button onClick={createProject}>Létrehozás</button>
-            </div>
-            {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
-          </div>
+  <h2>Projekt létrehozása</h2>
+
+  <div className="inline-row">
+  <input
+    type="text"
+    placeholder="Projekt neve"
+    value={projectName}
+    onChange={(e) => setProjectName(e.target.value)}
+    className="medium-input"
+  />
+
+  <div style={{ display: "flex", flexDirection: "column" }}>
+    <input
+      type="date"
+      value={validUntil}
+      onChange={(e) => setValidUntil(e.target.value)}
+      className="medium-input"
+    />
+    <span style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+      az árajánlat érvényességi ideje
+    </span>
+  </div>
+
+  <button onClick={createProject}>Létrehozás</button>
+</div>
+
+  {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
+</div>
 
           <div className="card section-space">
             <h2>Sablon kezelése</h2>
