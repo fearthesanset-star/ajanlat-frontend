@@ -20,6 +20,8 @@ function App() {
 
   const [quantities, setQuantities] = useState({});
   const [companyName, setCompanyName] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
+  const [companyPhone, setCompanyPhone] = useState("");
 
   const [name, setName] = useState("");
   const [type, setType] = useState("work");
@@ -71,15 +73,18 @@ function App() {
     }
   };
 
-  const loadCompanyName = async () => {
-    try {
-      const res = await fetch("https://ajanlat-app.onrender.com/settings/company-name");
-      const data = await res.json();
-      setCompanyName(data.company_name || "");
-    } catch (err) {
-      console.error("Cégnév betöltési hiba:", err);
-    }
-  };
+const loadCompanyName = async () => {
+  try {
+    const res = await fetch("https://ajanlat-app.onrender.com/settings/company");
+    const data = await res.json();
+
+    setCompanyName(data.company_name || "");
+    setCompanyEmail(data.company_email || "");
+    setCompanyPhone(data.company_phone || "");
+  } catch (err) {
+    console.error("Cégadatok betöltési hiba:", err);
+  }
+};
 
   const loadProjectItems = async (currentProjectId) => {
     if (!currentProjectId) return;
@@ -331,23 +336,27 @@ const createProject = async () => {
     window.open(`https://ajanlat-app.onrender.com/projects/${projectId}/export-pdf`, "_blank");
   };
 
-  const saveCompanyName = async () => {
-    if (!companyName.trim()) {
-      alert("Adj meg cégnév!");
-      return;
-    }
+const saveCompanyName = async () => {
+  if (!companyName.trim()) {
+    alert("Adj meg cégnév!");
+    return;
+  }
 
-    try {
-      await fetch(
-        `https://ajanlat-app.onrender.com/settings/company-name?name=${encodeURIComponent(companyName)}`,
-        { method: "PUT" }
-      );
+  try {
+    await fetch(
+      `https://ajanlat-app.onrender.com/settings/company?name=${encodeURIComponent(
+        companyName
+      )}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(
+        companyPhone
+      )}`,
+      { method: "PUT" }
+    );
 
-      alert("Cégnév mentve!");
-    } catch (err) {
-      console.error("Cégnév mentési hiba:", err);
-    }
-  };
+    alert("Cégadatok mentve!");
+  } catch (err) {
+    console.error("Cégadatok mentési hiba:", err);
+  }
+};
 
   return (
     <div>
@@ -356,18 +365,36 @@ const createProject = async () => {
       <div className="grid">
         <div>
           <div className="card">
-            <h2>Cégnév beállítása</h2>
-            <div className="inline-row">
-              <input
-                type="text"
-                placeholder="Cég neve"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="medium-input"
-              />
-              <button onClick={saveCompanyName}>Mentés</button>
-            </div>
-          </div>
+  <h2>Cégadatok beállítása</h2>
+
+  <div className="inline-row">
+    <input
+      type="text"
+      placeholder="Cég neve"
+      value={companyName}
+      onChange={(e) => setCompanyName(e.target.value)}
+      className="medium-input"
+    />
+
+    <input
+      type="email"
+      placeholder="Email cím"
+      value={companyEmail}
+      onChange={(e) => setCompanyEmail(e.target.value)}
+      className="medium-input"
+    />
+
+    <input
+      type="text"
+      placeholder="Telefonszám"
+      value={companyPhone}
+      onChange={(e) => setCompanyPhone(e.target.value)}
+      className="medium-input"
+    />
+
+    <button onClick={saveCompanyName}>Mentés</button>
+  </div>
+</div>
 
           <div className="card section-space">
   <h2>Projekt létrehozása</h2>

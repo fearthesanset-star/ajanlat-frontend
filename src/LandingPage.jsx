@@ -69,7 +69,7 @@ function LandingPage() {
       </nav>
 
       <section className="hero" id="home">
-        <span className="hero-badge">Modern SaaS megoldás vállalkozóknak</span>
+        <span className="hero-badge">Modern árajánlatadó megoldás vállalkozóknak</span>
 
         <h1>Profi ajánlatkészítés percek alatt</h1>
 
