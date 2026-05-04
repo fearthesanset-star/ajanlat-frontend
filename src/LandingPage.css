@@ -691,3 +691,39 @@ body:has(.landing) #root {
     grid-template-columns: 1fr;
   }
 }
+
+.demo-section {
+  padding: 80px 20px;
+}
+
+.video-wrapper {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.video-wrapper video {
+  width: 100%;
+  max-width: 700px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.demo-images {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.demo-images img {
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 768px) {
+  .demo-images {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,3 +1,6 @@
+import demo1 from "./assets/demo_kep1.png";
+import demo2 from "./assets/demo_kep2.png";
+import demoVideo from "./assets/demo_video.mp4";
 import "./LandingPage.css";
 import logo from "./assets/logo.svg";
 import { useState } from "react";
@@ -196,6 +199,27 @@ function LandingPage() {
       <h2>3 lépésben kész az ajánlatod</h2>
       <p>Egyszerű folyamat, percek alatt profi ajánlat.</p>
     </div>
+
+    <section className="demo-section">
+  <div className="section-container">
+    <div className="centered-text">
+      <span className="section-badge">Bemutató</span>
+      <h2>Nézd meg működés közben</h2>
+      <p>Gyors áttekintés arról, hogyan készül el egy ajánlat.</p>
+    </div>
+
+    <div className="video-wrapper">
+      <video controls>
+        <source src={demoVideo} type="video/mp4" />
+      </video>
+    </div>
+
+    <div className="demo-images">
+      <img src={demo1} alt="App demo 1" />
+      <img src={demo2} alt="App demo 2" />
+    </div>
+  </div>
+</section>
 
     <div className="steps-grid">
       <div className="step-card">
