@@ -524,6 +524,7 @@ const saveCompanyName = async () => {
           )}
         </div>
 
+
         <div className="card section-space">
           <h2>Új item</h2>
 
@@ -634,3 +635,4 @@ const saveCompanyName = async () => {
     </div>
   </div>
 );
+export default App;
