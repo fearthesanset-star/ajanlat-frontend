@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./AppMain.css";
 
 function App() {
@@ -28,6 +29,15 @@ function App() {
   const [unit, setUnit] = useState("m2");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const navigate = useNavigate();
+
+useEffect(() => {
+  const user = localStorage.getItem("user_id");
+  if (!user) {
+    navigate("/login");
+  }
+}, []);
+
 
   const loadItems = async () => {
     try {

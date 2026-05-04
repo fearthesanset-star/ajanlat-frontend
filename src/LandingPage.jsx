@@ -249,7 +249,7 @@ function LandingPage() {
             </p>
 
             <div className="cta-buttons">
-              <a href="/app">
+              <a href="/login">
                 <button className="primary">Belépés az appba</button>
               </a>
             </div>
