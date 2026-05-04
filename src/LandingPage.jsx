@@ -189,6 +189,33 @@ function LandingPage() {
         </div>
       </section>
 
+      <section className="how-it-works">
+  <div className="section-container">
+    <div className="centered-text">
+      <span className="section-badge">Így működik</span>
+      <h2>3 lépésben kész az ajánlatod</h2>
+      <p>Egyszerű folyamat, percek alatt profi ajánlat.</p>
+    </div>
+
+    <div className="steps-grid">
+      <div className="step-card">
+        <h3>1. Projekt létrehozása</h3>
+        <p>Adj nevet a projektnek és állítsd be az ajánlat érvényességét.</p>
+      </div>
+
+      <div className="step-card">
+        <h3>2. Tételek hozzáadása</h3>
+        <p>Válaszd ki az itemeket vagy használd a sablonokat.</p>
+      </div>
+
+      <div className="step-card">
+        <h3>3. PDF generálás</h3>
+        <p>Kész ajánlat egy kattintással, ügyfélnek küldhető formában.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
       <section className="cta-section">
         <div className="section-container">
           <div className="cta-card">
