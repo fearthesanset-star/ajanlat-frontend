@@ -31,6 +31,12 @@ function App() {
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
   const userId = localStorage.getItem("user_id");
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+  localStorage.removeItem("user_id");
+  navigate("/login");
+};
 
 useEffect(() => {
   const user = localStorage.getItem("user_id");
@@ -370,261 +376,261 @@ const saveCompanyName = async () => {
 };
 
   return (
-    <div>
-     <h1 className="main-title">Ajánlat készítő rendszer</h1>
+  <div>
+    <div className="top-bar">
+      <h1 className="main-title">Ajánlat készítő rendszer</h1>
+      <button onClick={handleLogout}>Kijelentkezés</button>
+    </div>
 
-      <div className="grid">
-        <div>
-          <div className="card">
-  <h2>Cégadatok beállítása</h2>
+    <div className="grid">
+      <div>
+        <div className="card">
+          <h2>Cégadatok beállítása</h2>
 
-  <div className="inline-row">
-    <input
-      type="text"
-      placeholder="Cég neve"
-      value={companyName}
-      onChange={(e) => setCompanyName(e.target.value)}
-      className="medium-input"
-    />
+          <div className="inline-row">
+            <input
+              type="text"
+              placeholder="Cég neve"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="medium-input"
+            />
 
-    <input
-      type="email"
-      placeholder="Email cím"
-      value={companyEmail}
-      onChange={(e) => setCompanyEmail(e.target.value)}
-      className="medium-input"
-    />
+            <input
+              type="email"
+              placeholder="Email cím"
+              value={companyEmail}
+              onChange={(e) => setCompanyEmail(e.target.value)}
+              className="medium-input"
+            />
 
-    <input
-      type="text"
-      placeholder="Telefonszám"
-      value={companyPhone}
-      onChange={(e) => setCompanyPhone(e.target.value)}
-      className="medium-input"
-    />
+            <input
+              type="text"
+              placeholder="Telefonszám"
+              value={companyPhone}
+              onChange={(e) => setCompanyPhone(e.target.value)}
+              className="medium-input"
+            />
 
-    <button onClick={saveCompanyName}>Mentés</button>
-  </div>
-</div>
-
-          <div className="card section-space">
-  <h2>Projekt létrehozása</h2>
-
-  <div className="inline-row">
-  <input
-    type="text"
-    placeholder="Projekt neve"
-    value={projectName}
-    onChange={(e) => setProjectName(e.target.value)}
-    className="medium-input"
-  />
-
-  <div style={{ display: "flex", flexDirection: "column" }}>
-    <input
-      type="date"
-      value={validUntil}
-      onChange={(e) => setValidUntil(e.target.value)}
-      className="medium-input"
-    />
-    <span style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-      az árajánlat érvényességi ideje
-    </span>
-  </div>
-
-  <button onClick={createProject}>Létrehozás</button>
-</div>
-
-  {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
-</div>
-
-          <div className="card section-space">
-            <h2>Sablon kezelése</h2>
-
-            <div className="inline-row">
-              <input
-                type="text"
-                placeholder="Új sablon neve"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                className="medium-input"
-              />
-              <button onClick={createTemplate}>Sablon létrehozása</button>
-            </div>
-
-            <div className="inline-row">
-              <select
-                value={selectedTemplateId}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedTemplateId(value);
-                  loadTemplateItems(value);
-                }}
-                className="medium-input"
-              >
-                <option value="">-- válassz sablont --</option>
-                {templates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-
-              <button onClick={addTemplateToProject}>Sablon projekthez adása</button>
-            </div>
-
-            <div className="inline-row">
-              <select
-                value={templateItemId}
-                onChange={(e) => setTemplateItemId(e.target.value)}
-                className="medium-input"
-              >
-                <option value="">-- item kiválasztása --</option>
-                {items.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} - {item.unit} - {item.price} Ft
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="number"
-                placeholder="Alap mennyiség"
-                value={templateQuantity}
-                onChange={(e) => setTemplateQuantity(e.target.value)}
-                className="small-input"
-              />
-
-              <button onClick={addItemToTemplate}>Item hozzáadása a sablonhoz</button>
-            </div>
-
-            {selectedTemplateId && (
-              <div>
-                <h3>Sablon tételei</h3>
-                {templateItems.length === 0 && <p className="muted">Nincs még tétel a sablonban.</p>}
-                <ul>
-                  {templateItems.map((item) => (
-                    <li key={item.template_item_id}>
-                      {item.name} - {item.default_quantity} {item.unit} - {item.price} Ft
-                      <button onClick={() => deleteTemplateItem(item.template_item_id)}>
-                        Törlés
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          <div className="card section-space">
-            <h2>Új item</h2>
-
-            <form onSubmit={handleSubmit}>
-              <div className="form-row">
-                <input
-                  type="text"
-                  placeholder="Név"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="full-width"
-                />
-              </div>
-
-              <div className="form-row">
-                <select value={type} onChange={(e) => setType(e.target.value)} className="full-width">
-                  <option value="work">work</option>
-                  <option value="material">material</option>
-                </select>
-              </div>
-
-              <div className="form-row">
-                <input
-                  type="text"
-                  placeholder="Egység"
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  className="full-width"
-                />
-              </div>
-
-              <div className="form-row">
-                <input
-                  type="number"
-                  placeholder="Ár"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="full-width"
-                />
-              </div>
-
-              <div className="form-row">
-                <input
-                  type="text"
-                  placeholder="Leírás"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="full-width"
-                />
-              </div>
-
-              <button type="submit">Mentés</button>
-            </form>
+            <button onClick={saveCompanyName}>Mentés</button>
           </div>
         </div>
 
-        <div>
-          <div className="card">
-            <h2>Item lista</h2>
-            {items.length === 0 && <p className="muted">Nincs adat</p>}
+        <div className="card section-space">
+          <h2>Projekt létrehozása</h2>
 
-            <ul>
+          <div className="inline-row">
+            <input
+              type="text"
+              placeholder="Projekt neve"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="medium-input"
+            />
+
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <input
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                className="medium-input"
+              />
+              <span style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                az árajánlat érvényességi ideje
+              </span>
+            </div>
+
+            <button onClick={createProject}>Létrehozás</button>
+          </div>
+
+          {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
+        </div>
+
+        <div className="card section-space">
+          <h2>Sablon kezelése</h2>
+
+          <div className="inline-row">
+            <input
+              type="text"
+              placeholder="Új sablon neve"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              className="medium-input"
+            />
+            <button onClick={createTemplate}>Sablon létrehozása</button>
+          </div>
+
+          <div className="inline-row">
+            <select
+              value={selectedTemplateId}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedTemplateId(value);
+                loadTemplateItems(value);
+              }}
+              className="medium-input"
+            >
+              <option value="">-- válassz sablont --</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+
+            <button onClick={addTemplateToProject}>Sablon projekthez adása</button>
+          </div>
+
+          <div className="inline-row">
+            <select
+              value={templateItemId}
+              onChange={(e) => setTemplateItemId(e.target.value)}
+              className="medium-input"
+            >
+              <option value="">-- item kiválasztása --</option>
               {items.map((item) => (
-                <li key={item.id}>
-                  {item.name} - {item.price} Ft - {item.unit}
-                  <input
-                    type="number"
-                    min="1"
-                    value={quantities[item.id] || 1}
-                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                    className="small-input"
-                  />
-                  <button onClick={() => addToProject(item.id)}>Projekthez adás</button>
-                  <button onClick={() => handleDelete(item.id)}>Törlés</button>
-                </li>
+                <option key={item.id} value={item.id}>
+                  {item.name} - {item.unit} - {item.price} Ft
+                </option>
               ))}
-            </ul>
+            </select>
+
+            <input
+              type="number"
+              placeholder="Alap mennyiség"
+              value={templateQuantity}
+              onChange={(e) => setTemplateQuantity(e.target.value)}
+              className="small-input"
+            />
+
+            <button onClick={addItemToTemplate}>Item hozzáadása a sablonhoz</button>
           </div>
 
-          <div className="card section-space">
-            <h2>Projekt tételek</h2>
+          {selectedTemplateId && (
+            <div>
+              <h3>Sablon tételei</h3>
+              {templateItems.length === 0 && <p className="muted">Nincs még tétel a sablonban.</p>}
+              <ul>
+                {templateItems.map((item) => (
+                  <li key={item.template_item_id}>
+                    {item.name} - {item.default_quantity} {item.unit} - {item.price} Ft
+                    <button onClick={() => deleteTemplateItem(item.template_item_id)}>
+                      Törlés
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
 
-            {!projectId && <p className="muted">Először hozz létre projektet.</p>}
+        <div className="card section-space">
+          <h2>Új item</h2>
 
-            {projectId && projectItems.length === 0 && (
-              <p className="muted">Még nincs tétel a projektben.</p>
-            )}
+          <form onSubmit={handleSubmit}>
+            <div className="form-row">
+              <input
+                type="text"
+                placeholder="Név"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="full-width"
+              />
+            </div>
 
-            <ul>
-              {projectItems.map((item) => (
-                <li key={item.project_item_id}>
-                  {item.name} - {item.quantity} {item.unit} - {item.price} Ft
-                  <button onClick={() => deleteProjectItem(item.project_item_id)}>
-                    Törlés
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="form-row">
+              <select value={type} onChange={(e) => setType(e.target.value)} className="full-width">
+                <option value="work">work</option>
+                <option value="material">material</option>
+              </select>
+            </div>
 
-            {projectId && (
-              <>
-                <h3>Végösszeg: {projectTotal} Ft</h3>
-                <button onClick={exportPdf}>PDF letöltés</button>
-              </>
-            )}
-          </div>
+            <div className="form-row">
+              <input
+                type="text"
+                placeholder="Egység"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="full-width"
+              />
+            </div>
+
+            <div className="form-row">
+              <input
+                type="number"
+                placeholder="Ár"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="full-width"
+              />
+            </div>
+
+            <div className="form-row">
+              <input
+                type="text"
+                placeholder="Leírás"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="full-width"
+              />
+            </div>
+
+            <button type="submit">Mentés</button>
+          </form>
+        </div>
+      </div>
+
+      <div>
+        <div className="card">
+          <h2>Item lista</h2>
+          {items.length === 0 && <p className="muted">Nincs adat</p>}
+
+          <ul>
+            {items.map((item) => (
+              <li key={item.id}>
+                {item.name} - {item.price} Ft - {item.unit}
+                <input
+                  type="number"
+                  min="1"
+                  value={quantities[item.id] || 1}
+                  onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                  className="small-input"
+                />
+                <button onClick={() => addToProject(item.id)}>Projekthez adás</button>
+                <button onClick={() => handleDelete(item.id)}>Törlés</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="card section-space">
+          <h2>Projekt tételek</h2>
+
+          {!projectId && <p className="muted">Először hozz létre projektet.</p>}
+
+          {projectId && projectItems.length === 0 && (
+            <p className="muted">Még nincs tétel a projektben.</p>
+          )}
+
+          <ul>
+            {projectItems.map((item) => (
+              <li key={item.project_item_id}>
+                {item.name} - {item.quantity} {item.unit} - {item.price} Ft
+                <button onClick={() => deleteProjectItem(item.project_item_id)}>
+                  Törlés
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {projectId && (
+            <>
+              <h3>Végösszeg: {projectTotal} Ft</h3>
+              <button onClick={exportPdf}>PDF letöltés</button>
+            </>
+          )}
         </div>
       </div>
     </div>
-  );
-}
-
-export default App;
+  </div>
+);
