@@ -1,11 +1,12 @@
+import "./LandingPage.css";
+import logo from "./assets/logo.svg";
 import demo1 from "./assets/demo_kep1.png";
 import demo2 from "./assets/demo_kep2.png";
 import demoVideo from "./assets/demo_video.mp4";
-import "./LandingPage.css";
-import logo from "./assets/logo.svg";
 import { useState } from "react";
 
 function LandingPage() {
+  const [selectedMedia, setSelectedMedia] = useState(null);
   const [email, setEmail] = useState("");
   const [accepted, setAccepted] = useState(false);
 
@@ -200,43 +201,40 @@ function LandingPage() {
       <p>Egyszerű folyamat, percek alatt profi ajánlat.</p>
     </div>
 
-    <section className="demo-section">
-  <div className="section-container">
-    <div className="centered-text">
-      <span className="section-badge">Bemutató</span>
-      <h2>Nézd meg működés közben</h2>
-      <p>Gyors áttekintés arról, hogyan készül el egy ajánlat.</p>
-    </div>
+<div className="steps-grid">
+  <div className="step-card media-card" onClick={() => setSelectedMedia({ type: "image", src: demo1 })}>
+    <img src={demo1} alt="Projekt létrehozása és tételek kezelése" />
+    <h3>1. Projekt létrehozása</h3>
+    <p>Adj nevet a projektnek és állítsd be az ajánlat érvényességét.</p>
+  </div>
 
-    <div className="video-wrapper">
-      <video controls>
-        <source src={demoVideo} type="video/mp4" />
-      </video>
-    </div>
+  <div className="step-card media-card" onClick={() => setSelectedMedia({ type: "image", src: demo2 })}>
+    <img src={demo2} alt="PDF ajánlat előnézet" />
+    <h3>2. PDF előnézet</h3>
+    <p>Nézd meg, hogyan jelenik meg az elkészült ajánlat.</p>
+  </div>
 
-    <div className="demo-images">
-      <img src={demo1} alt="App demo 1" />
-      <img src={demo2} alt="App demo 2" />
+  <div className="step-card media-card" onClick={() => setSelectedMedia({ type: "video", src: demoVideo })}>
+    <video muted>
+      <source src={demoVideo} type="video/mp4" />
+    </video>
+    <h3>3. Működés közben</h3>
+    <p>Rövid videó arról, hogyan készül el egy ajánlat.</p>
+  </div>
+</div>
+{selectedMedia && (
+  <div className="media-modal" onClick={() => setSelectedMedia(null)}>
+    <div className="media-modal-content" onClick={(e) => e.stopPropagation()}>
+      {selectedMedia.type === "image" ? (
+        <img src={selectedMedia.src} alt="Nagyított bemutató" />
+      ) : (
+        <video controls autoPlay>
+          <source src={selectedMedia.src} type="video/mp4" />
+        </video>
+      )}
     </div>
   </div>
-</section>
-
-    <div className="steps-grid">
-      <div className="step-card">
-        <h3>1. Projekt létrehozása</h3>
-        <p>Adj nevet a projektnek és állítsd be az ajánlat érvényességét.</p>
-      </div>
-
-      <div className="step-card">
-        <h3>2. Tételek hozzáadása</h3>
-        <p>Válaszd ki az itemeket vagy használd a sablonokat.</p>
-      </div>
-
-      <div className="step-card">
-        <h3>3. PDF generálás</h3>
-        <p>Kész ajánlat egy kattintással, ügyfélnek küldhető formában.</p>
-      </div>
-    </div>
+)}
   </div>
 </section>
 
