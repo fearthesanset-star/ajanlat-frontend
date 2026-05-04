@@ -30,6 +30,7 @@ function App() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
+  const userId = localStorage.getItem("user_id");
 
 useEffect(() => {
   const user = localStorage.getItem("user_id");
@@ -179,11 +180,11 @@ const createProject = async () => {
 
   try {
     const res = await fetch(
-      `https://ajanlat-app.onrender.com/projects?name=${encodeURIComponent(
-        projectName
-      )}&valid_until=${encodeURIComponent(validUntil)}`,
-      { method: "POST" }
-    );
+  `https://ajanlat-app.onrender.com/projects?name=${encodeURIComponent(
+    projectName
+  )}&user_id=${userId}&valid_until=${encodeURIComponent(validUntil)}`,
+  { method: "POST" }
+);
 
     const data = await res.json();
     setProjectId(data.id);
