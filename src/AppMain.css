@@ -12,6 +12,11 @@ body {
   margin: 0 auto;
 }
 
+.main-title {
+  color: white;
+  text-align: center;
+}
+
 /* fő cím */
 h1 {
   font-size: 34px;

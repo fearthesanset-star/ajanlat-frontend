@@ -360,7 +360,7 @@ const saveCompanyName = async () => {
 
   return (
     <div>
-      <h1>Ajánlat készítő rendszer</h1>
+     <h1 className="main-title">Ajánlat készítő rendszer</h1>
 
       <div className="grid">
         <div>
