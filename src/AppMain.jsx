@@ -31,7 +31,7 @@ function App() {
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
   const userId = localStorage.getItem("user_id");
-  const navigate = useNavigate();
+  
 
   const handleLogout = () => {
   localStorage.removeItem("user_id");
@@ -635,4 +635,6 @@ const saveCompanyName = async () => {
     </div>
   </div>
 );
+}
+
 export default App;
