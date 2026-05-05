@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import "./AppMain.css";
 
 function App() {
+  const navigate = useNavigate();
+  const userId = localStorage.getItem("user_id");
+
   const [items, setItems] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [templateItems, setTemplateItems] = useState([]);
@@ -29,43 +32,38 @@ function App() {
   const [unit, setUnit] = useState("m2");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
-  const navigate = useNavigate();
-  const userId = localStorage.getItem("user_id");
-  
 
   const handleLogout = () => {
-  localStorage.removeItem("user_id");
-  navigate("/login");
-};
-
-useEffect(() => {
-  const user = localStorage.getItem("user_id");
-  if (!user) {
+    localStorage.removeItem("user_id");
     navigate("/login");
-  }
-}, []);
-
+  };
 
   const loadItems = async () => {
+    if (!userId) return;
+
     try {
-      const res = await fetch("https://ajanlat-app.onrender.com/items");
+      const res = await fetch(`https://ajanlat-app.onrender.com/items/${userId}`);
       const data = await res.json();
       const safeData = Array.isArray(data) ? data : [];
+
       setItems(safeData);
 
       const initialQuantities = {};
       safeData.forEach((item) => {
-        initialQuantities[item.id] = initialQuantities[item.id] || 1;
+        initialQuantities[item.id] = 1;
       });
       setQuantities(initialQuantities);
     } catch (err) {
       console.error("Item betöltési hiba:", err);
+      setItems([]);
     }
   };
 
   const loadTemplates = async () => {
+    if (!userId) return;
+
     try {
-      const res = await fetch("https://ajanlat-app.onrender.com/templates");
+      const res = await fetch(`https://ajanlat-app.onrender.com/templates/${userId}`);
       const data = await res.json();
       setTemplates(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -90,18 +88,18 @@ useEffect(() => {
     }
   };
 
-const loadCompanyName = async () => {
-  try {
-    const res = await fetch("https://ajanlat-app.onrender.com/settings/company");
-    const data = await res.json();
+  const loadCompanyName = async () => {
+    try {
+      const res = await fetch("https://ajanlat-app.onrender.com/settings/company");
+      const data = await res.json();
 
-    setCompanyName(data.company_name || "");
-    setCompanyEmail(data.company_email || "");
-    setCompanyPhone(data.company_phone || "");
-  } catch (err) {
-    console.error("Cégadatok betöltési hiba:", err);
-  }
-};
+      setCompanyName(data.company_name || "");
+      setCompanyEmail(data.company_email || "");
+      setCompanyPhone(data.company_phone || "");
+    } catch (err) {
+      console.error("Cégadatok betöltési hiba:", err);
+    }
+  };
 
   const loadProjectItems = async (currentProjectId) => {
     if (!currentProjectId) return;
@@ -130,6 +128,11 @@ const loadCompanyName = async () => {
   };
 
   useEffect(() => {
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+
     loadItems();
     loadTemplates();
     loadCompanyName();
@@ -138,13 +141,10 @@ const loadCompanyName = async () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newItem = {
-      name,
-      type,
-      unit,
-      price: Number(price),
-      description,
-    };
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
 
     try {
       await fetch("https://ajanlat-app.onrender.com/items", {
@@ -152,7 +152,14 @@ const loadCompanyName = async () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newItem),
+        body: JSON.stringify({
+          name,
+          type,
+          unit,
+          price: Number(price),
+          description,
+          user_id: Number(userId),
+        }),
       });
 
       setName("");
@@ -169,7 +176,7 @@ const loadCompanyName = async () => {
 
   const handleDelete = async (itemId) => {
     try {
-      await fetch(`https://ajanlat-app.onrender.com/items/${itemId}`, {
+      await fetch(`https://ajanlat-app.onrender.com/items/${itemId}?user_id=${userId}`, {
         method: "DELETE",
       });
       loadItems();
@@ -178,31 +185,37 @@ const loadCompanyName = async () => {
     }
   };
 
-const createProject = async () => {
-  if (!projectName.trim()) {
-    alert("Adj meg projektnevet!");
-    return;
-  }
+  const createProject = async () => {
+    if (!projectName.trim()) {
+      alert("Adj meg projektnevet!");
+      return;
+    }
 
-  try {
-    const res = await fetch(
-  `https://ajanlat-app.onrender.com/projects?name=${encodeURIComponent(
-    projectName
-  )}&user_id=${userId}&valid_until=${encodeURIComponent(validUntil)}`,
-  { method: "POST" }
-);
+    try {
+      const res = await fetch(
+        `https://ajanlat-app.onrender.com/projects?name=${encodeURIComponent(
+          projectName
+        )}&user_id=${userId}&valid_until=${encodeURIComponent(validUntil)}`,
+        { method: "POST" }
+      );
 
-    const data = await res.json();
-    setProjectId(data.id);
-    setActiveProjectName(data.name);
-    setProjectName("");
-    setValidUntil("");
-    setProjectItems([]);
-    setProjectTotal(0);
-  } catch (err) {
-    console.error("Projekt létrehozási hiba:", err);
-  }
-};
+      const data = await res.json();
+
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      setProjectId(data.id);
+      setActiveProjectName(data.name);
+      setProjectName("");
+      setValidUntil("");
+      setProjectItems([]);
+      setProjectTotal(0);
+    } catch (err) {
+      console.error("Projekt létrehozási hiba:", err);
+    }
+  };
 
   const createTemplate = async () => {
     if (!templateName.trim()) {
@@ -212,11 +225,19 @@ const createProject = async () => {
 
     try {
       const res = await fetch(
-        `https://ajanlat-app.onrender.com/templates?name=${encodeURIComponent(templateName)}`,
+        `https://ajanlat-app.onrender.com/templates?name=${encodeURIComponent(
+          templateName
+        )}&user_id=${userId}`,
         { method: "POST" }
       );
 
       const data = await res.json();
+
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
       setTemplateName("");
       setSelectedTemplateId(String(data.id));
       await loadTemplates();
@@ -353,288 +374,288 @@ const createProject = async () => {
     window.open(`https://ajanlat-app.onrender.com/projects/${projectId}/export-pdf`, "_blank");
   };
 
-const saveCompanyName = async () => {
-  if (!companyName.trim()) {
-    alert("Adj meg cégnév!");
-    return;
-  }
+  const saveCompanyName = async () => {
+    if (!companyName.trim()) {
+      alert("Adj meg cégnév!");
+      return;
+    }
 
-  try {
-    await fetch(
-      `https://ajanlat-app.onrender.com/settings/company?name=${encodeURIComponent(
-        companyName
-      )}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(
-        companyPhone
-      )}`,
-      { method: "PUT" }
-    );
+    try {
+      await fetch(
+        `https://ajanlat-app.onrender.com/settings/company?name=${encodeURIComponent(
+          companyName
+        )}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(companyPhone)}`,
+        { method: "PUT" }
+      );
 
-    alert("Cégadatok mentve!");
-  } catch (err) {
-    console.error("Cégadatok mentési hiba:", err);
-  }
-};
+      alert("Cégadatok mentve!");
+    } catch (err) {
+      console.error("Cégadatok mentési hiba:", err);
+    }
+  };
 
   return (
-  <div>
-    <div className="top-bar">
-      <h1 className="main-title">Ajánlat készítő rendszer</h1>
-      <button onClick={handleLogout}>Kijelentkezés</button>
-    </div>
+    <div>
+      <div className="top-bar">
+        <h1 className="main-title">Ajánlat készítő rendszer</h1>
+        <button onClick={handleLogout}>Kijelentkezés</button>
+      </div>
 
-    <div className="grid">
-      <div>
-        <div className="card">
-          <h2>Cégadatok beállítása</h2>
+      <div className="grid">
+        <div>
+          <div className="card">
+            <h2>Cégadatok beállítása</h2>
 
-          <div className="inline-row">
-            <input
-              type="text"
-              placeholder="Cég neve"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              className="medium-input"
-            />
-
-            <input
-              type="email"
-              placeholder="Email cím"
-              value={companyEmail}
-              onChange={(e) => setCompanyEmail(e.target.value)}
-              className="medium-input"
-            />
-
-            <input
-              type="text"
-              placeholder="Telefonszám"
-              value={companyPhone}
-              onChange={(e) => setCompanyPhone(e.target.value)}
-              className="medium-input"
-            />
-
-            <button onClick={saveCompanyName}>Mentés</button>
-          </div>
-        </div>
-
-        <div className="card section-space">
-          <h2>Projekt létrehozása</h2>
-
-          <div className="inline-row">
-            <input
-              type="text"
-              placeholder="Projekt neve"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              className="medium-input"
-            />
-
-            <div style={{ display: "flex", flexDirection: "column" }}>
+            <div className="inline-row">
               <input
-                type="date"
-                value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
+                type="text"
+                placeholder="Cég neve"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
                 className="medium-input"
               />
-              <span style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-                az árajánlat érvényességi ideje
-              </span>
+
+              <input
+                type="email"
+                placeholder="Email cím"
+                value={companyEmail}
+                onChange={(e) => setCompanyEmail(e.target.value)}
+                className="medium-input"
+              />
+
+              <input
+                type="text"
+                placeholder="Telefonszám"
+                value={companyPhone}
+                onChange={(e) => setCompanyPhone(e.target.value)}
+                className="medium-input"
+              />
+
+              <button onClick={saveCompanyName}>Mentés</button>
+            </div>
+          </div>
+
+          <div className="card section-space">
+            <h2>Projekt létrehozása</h2>
+
+            <div className="inline-row">
+              <input
+                type="text"
+                placeholder="Projekt neve"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                className="medium-input"
+              />
+
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <input
+                  type="date"
+                  value={validUntil}
+                  onChange={(e) => setValidUntil(e.target.value)}
+                  className="medium-input"
+                />
+                <span style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                  az árajánlat érvényességi ideje
+                </span>
+              </div>
+
+              <button onClick={createProject}>Létrehozás</button>
             </div>
 
-            <button onClick={createProject}>Létrehozás</button>
+            {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
           </div>
 
-          {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
-        </div>
+          <div className="card section-space">
+            <h2>Sablon kezelése</h2>
 
-        <div className="card section-space">
-          <h2>Sablon kezelése</h2>
+            <div className="inline-row">
+              <input
+                type="text"
+                placeholder="Új sablon neve"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                className="medium-input"
+              />
+              <button onClick={createTemplate}>Sablon létrehozása</button>
+            </div>
 
-          <div className="inline-row">
-            <input
-              type="text"
-              placeholder="Új sablon neve"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              className="medium-input"
-            />
-            <button onClick={createTemplate}>Sablon létrehozása</button>
-          </div>
-
-          <div className="inline-row">
-            <select
-              value={selectedTemplateId}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSelectedTemplateId(value);
-                loadTemplateItems(value);
-              }}
-              className="medium-input"
-            >
-              <option value="">-- válassz sablont --</option>
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </select>
-
-            <button onClick={addTemplateToProject}>Sablon projekthez adása</button>
-          </div>
-
-          <div className="inline-row">
-            <select
-              value={templateItemId}
-              onChange={(e) => setTemplateItemId(e.target.value)}
-              className="medium-input"
-            >
-              <option value="">-- item kiválasztása --</option>
-              {items.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} - {item.unit} - {item.price} Ft
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              placeholder="Alap mennyiség"
-              value={templateQuantity}
-              onChange={(e) => setTemplateQuantity(e.target.value)}
-              className="small-input"
-            />
-
-            <button onClick={addItemToTemplate}>Item hozzáadása a sablonhoz</button>
-          </div>
-
-          {selectedTemplateId && (
-            <div>
-              <h3>Sablon tételei</h3>
-              {templateItems.length === 0 && <p className="muted">Nincs még tétel a sablonban.</p>}
-              <ul>
-                {templateItems.map((item) => (
-                  <li key={item.template_item_id}>
-                    {item.name} - {item.default_quantity} {item.unit} - {item.price} Ft
-                    <button onClick={() => deleteTemplateItem(item.template_item_id)}>
-                      Törlés
-                    </button>
-                  </li>
+            <div className="inline-row">
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedTemplateId(value);
+                  loadTemplateItems(value);
+                }}
+                className="medium-input"
+              >
+                <option value="">-- válassz sablont --</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
                 ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-
-        <div className="card section-space">
-          <h2>Új item</h2>
-
-          <form onSubmit={handleSubmit}>
-            <div className="form-row">
-              <input
-                type="text"
-                placeholder="Név"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="full-width"
-              />
-            </div>
-
-            <div className="form-row">
-              <select value={type} onChange={(e) => setType(e.target.value)} className="full-width">
-                <option value="work">work</option>
-                <option value="material">material</option>
               </select>
+
+              <button onClick={addTemplateToProject}>Sablon projekthez adása</button>
             </div>
 
-            <div className="form-row">
-              <input
-                type="text"
-                placeholder="Egység"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="full-width"
-              />
-            </div>
+            <div className="inline-row">
+              <select
+                value={templateItemId}
+                onChange={(e) => setTemplateItemId(e.target.value)}
+                className="medium-input"
+              >
+                <option value="">-- item kiválasztása --</option>
+                {items.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} - {item.unit} - {item.price} Ft
+                  </option>
+                ))}
+              </select>
 
-            <div className="form-row">
               <input
                 type="number"
-                placeholder="Ár"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="full-width"
+                placeholder="Alap mennyiség"
+                value={templateQuantity}
+                onChange={(e) => setTemplateQuantity(e.target.value)}
+                className="small-input"
               />
+
+              <button onClick={addItemToTemplate}>Item hozzáadása a sablonhoz</button>
             </div>
 
-            <div className="form-row">
-              <input
-                type="text"
-                placeholder="Leírás"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="full-width"
-              />
-            </div>
+            {selectedTemplateId && (
+              <div>
+                <h3>Sablon tételei</h3>
+                {templateItems.length === 0 && (
+                  <p className="muted">Nincs még tétel a sablonban.</p>
+                )}
 
-            <button type="submit">Mentés</button>
-          </form>
-        </div>
-      </div>
+                <ul>
+                  {templateItems.map((item) => (
+                    <li key={item.template_item_id}>
+                      {item.name} - {item.default_quantity} {item.unit} - {item.price} Ft
+                      <button onClick={() => deleteTemplateItem(item.template_item_id)}>
+                        Törlés
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
-      <div>
-        <div className="card">
-          <h2>Item lista</h2>
-          {items.length === 0 && <p className="muted">Nincs adat</p>}
+          <div className="card section-space">
+            <h2>Új item</h2>
 
-          <ul>
-            {items.map((item) => (
-              <li key={item.id}>
-                {item.name} - {item.price} Ft - {item.unit}
+            <form onSubmit={handleSubmit}>
+              <div className="form-row">
+                <input
+                  type="text"
+                  placeholder="Név"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="full-width"
+                />
+              </div>
+
+              <div className="form-row">
+                <select value={type} onChange={(e) => setType(e.target.value)} className="full-width">
+                  <option value="work">work</option>
+                  <option value="material">material</option>
+                </select>
+              </div>
+
+              <div className="form-row">
+                <input
+                  type="text"
+                  placeholder="Egység"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  className="full-width"
+                />
+              </div>
+
+              <div className="form-row">
                 <input
                   type="number"
-                  min="1"
-                  value={quantities[item.id] || 1}
-                  onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                  className="small-input"
+                  placeholder="Ár"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="full-width"
                 />
-                <button onClick={() => addToProject(item.id)}>Projekthez adás</button>
-                <button onClick={() => handleDelete(item.id)}>Törlés</button>
-              </li>
-            ))}
-          </ul>
+              </div>
+
+              <div className="form-row">
+                <input
+                  type="text"
+                  placeholder="Leírás"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="full-width"
+                />
+              </div>
+
+              <button type="submit">Mentés</button>
+            </form>
+          </div>
         </div>
 
-        <div className="card section-space">
-          <h2>Projekt tételek</h2>
+        <div>
+          <div className="card">
+            <h2>Item lista</h2>
+            {items.length === 0 && <p className="muted">Nincs adat</p>}
 
-          {!projectId && <p className="muted">Először hozz létre projektet.</p>}
+            <ul>
+              {items.map((item) => (
+                <li key={item.id}>
+                  {item.name} - {item.price} Ft - {item.unit}
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantities[item.id] || 1}
+                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                    className="small-input"
+                  />
+                  <button onClick={() => addToProject(item.id)}>Projekthez adás</button>
+                  <button onClick={() => handleDelete(item.id)}>Törlés</button>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          {projectId && projectItems.length === 0 && (
-            <p className="muted">Még nincs tétel a projektben.</p>
-          )}
+          <div className="card section-space">
+            <h2>Projekt tételek</h2>
 
-          <ul>
-            {projectItems.map((item) => (
-              <li key={item.project_item_id}>
-                {item.name} - {item.quantity} {item.unit} - {item.price} Ft
-                <button onClick={() => deleteProjectItem(item.project_item_id)}>
-                  Törlés
-                </button>
-              </li>
-            ))}
-          </ul>
+            {!projectId && <p className="muted">Először hozz létre projektet.</p>}
 
-          {projectId && (
-            <>
-              <h3>Végösszeg: {projectTotal} Ft</h3>
-              <button onClick={exportPdf}>PDF letöltés</button>
-            </>
-          )}
+            {projectId && projectItems.length === 0 && (
+              <p className="muted">Még nincs tétel a projektben.</p>
+            )}
+
+            <ul>
+              {projectItems.map((item) => (
+                <li key={item.project_item_id}>
+                  {item.name} - {item.quantity} {item.unit} - {item.price} Ft
+                  <button onClick={() => deleteProjectItem(item.project_item_id)}>
+                    Törlés
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {projectId && (
+              <>
+                <h3>Végösszeg: {projectTotal} Ft</h3>
+                <button onClick={exportPdf}>PDF letöltés</button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default App;
