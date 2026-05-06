@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AppMain.css";
 
+const API_URL = "https://ajanlat-app.onrender.com";
+
 function App() {
   const navigate = useNavigate();
-  const userId = localStorage.getItem("user_id");
+
   const token = localStorage.getItem("token");
 
   const [items, setItems] = useState([]);
@@ -34,20 +36,42 @@ function App() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
 
+  const authHeaders = {
+    Authorization: `Bearer ${token}`,
+  };
+
+  const jsonAuthHeaders = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  const handleAuthError = (res) => {
+    if (res.status === 401) {
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("token");
+      navigate("/login");
+      return true;
+    }
+
+    return false;
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("user_id");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
   const loadItems = async () => {
-    if (!userId) return;
+    if (!token) return;
 
     try {
-      const res = await fetch(`https://ajanlat-app.onrender.com/items/${userId}`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+      const res = await fetch(`${API_URL}/items/me`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
       const data = await res.json();
       const safeData = Array.isArray(data) ? data : [];
 
@@ -65,10 +89,15 @@ function App() {
   };
 
   const loadTemplates = async () => {
-    if (!userId) return;
+    if (!token) return;
 
     try {
-      const res = await fetch(`https://ajanlat-app.onrender.com/templates/${userId}`);
+      const res = await fetch(`${API_URL}/templates/me`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
       const data = await res.json();
       setTemplates(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -78,13 +107,18 @@ function App() {
   };
 
   const loadTemplateItems = async (templateId) => {
-    if (!templateId) {
+    if (!templateId || !token) {
       setTemplateItems([]);
       return;
     }
 
     try {
-      const res = await fetch(`https://ajanlat-app.onrender.com/templates/${templateId}/items`);
+      const res = await fetch(`${API_URL}/templates/${templateId}/items`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
       const data = await res.json();
       setTemplateItems(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -94,8 +128,15 @@ function App() {
   };
 
   const loadCompanyName = async () => {
+    if (!token) return;
+
     try {
-      const res = await fetch(`https://ajanlat-app.onrender.com/settings/company/${userId}`);
+      const res = await fetch(`${API_URL}/settings/company/me`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
       const data = await res.json();
 
       setCompanyName(data.company_name || "");
@@ -107,10 +148,15 @@ function App() {
   };
 
   const loadProjectItems = async (currentProjectId) => {
-    if (!currentProjectId) return;
+    if (!currentProjectId || !token) return;
 
     try {
-      const res = await fetch(`https://ajanlat-app.onrender.com/projects/${currentProjectId}/items`);
+      const res = await fetch(`${API_URL}/projects/${currentProjectId}/items`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
       const data = await res.json();
       setProjectItems(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -120,10 +166,15 @@ function App() {
   };
 
   const loadProjectTotal = async (currentProjectId) => {
-    if (!currentProjectId) return;
+    if (!currentProjectId || !token) return;
 
     try {
-      const res = await fetch(`https://ajanlat-app.onrender.com/projects/${currentProjectId}/total`);
+      const res = await fetch(`${API_URL}/projects/${currentProjectId}/total`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
       const data = await res.json();
       setProjectTotal(Number(data.total) || 0);
     } catch (err) {
@@ -133,7 +184,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (!userId) {
+    if (!token) {
       navigate("/login");
       return;
     }
@@ -146,26 +197,32 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!userId) {
+    if (!token) {
       navigate("/login");
       return;
     }
 
     try {
-      await fetch("https://ajanlat-app.onrender.com/items", {
+      const res = await fetch(`${API_URL}/items`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: jsonAuthHeaders,
         body: JSON.stringify({
           name,
           type,
           unit,
           price: Number(price),
           description,
-          user_id: Number(userId),
         }),
       });
+
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        alert(data.error || "Item mentése sikertelen.");
+        return;
+      }
 
       setName("");
       setType("work");
@@ -181,9 +238,13 @@ function App() {
 
   const handleDelete = async (itemId) => {
     try {
-      await fetch(`https://ajanlat-app.onrender.com/items/${itemId}?user_id=${userId}`, {
+      const res = await fetch(`${API_URL}/items/${itemId}`, {
         method: "DELETE",
+        headers: authHeaders,
       });
+
+      if (handleAuthError(res)) return;
+
       loadItems();
     } catch (err) {
       console.error("Item törlési hiba:", err);
@@ -198,16 +259,21 @@ function App() {
 
     try {
       const res = await fetch(
-        `https://ajanlat-app.onrender.com/projects?name=${encodeURIComponent(
+        `${API_URL}/projects?name=${encodeURIComponent(
           projectName
-        )}&user_id=${userId}&valid_until=${encodeURIComponent(validUntil)}`,
-        { method: "POST" }
+        )}&valid_until=${encodeURIComponent(validUntil)}`,
+        {
+          method: "POST",
+          headers: authHeaders,
+        }
       );
+
+      if (handleAuthError(res)) return;
 
       const data = await res.json();
 
-      if (data.error) {
-        alert(data.error);
+      if (!res.ok || data.error) {
+        alert(data.error || "Projekt létrehozása sikertelen.");
         return;
       }
 
@@ -230,16 +296,19 @@ function App() {
 
     try {
       const res = await fetch(
-        `https://ajanlat-app.onrender.com/templates?name=${encodeURIComponent(
-          templateName
-        )}&user_id=${userId}`,
-        { method: "POST" }
+        `${API_URL}/templates?name=${encodeURIComponent(templateName)}`,
+        {
+          method: "POST",
+          headers: authHeaders,
+        }
       );
+
+      if (handleAuthError(res)) return;
 
       const data = await res.json();
 
-      if (data.error) {
-        alert(data.error);
+      if (!res.ok || data.error) {
+        alert(data.error || "Sablon létrehozása sikertelen.");
         return;
       }
 
@@ -270,10 +339,15 @@ function App() {
     }
 
     try {
-      await fetch(
-        `https://ajanlat-app.onrender.com/templates/${selectedTemplateId}/items?item_id=${templateItemId}&default_quantity=${qty}`,
-        { method: "POST" }
+      const res = await fetch(
+        `${API_URL}/templates/${selectedTemplateId}/items?item_id=${templateItemId}&default_quantity=${qty}`,
+        {
+          method: "POST",
+          headers: authHeaders,
+        }
       );
+
+      if (handleAuthError(res)) return;
 
       setTemplateItemId("");
       setTemplateQuantity("");
@@ -287,10 +361,15 @@ function App() {
     if (!selectedTemplateId) return;
 
     try {
-      await fetch(
-        `https://ajanlat-app.onrender.com/templates/${selectedTemplateId}/items/${templateItemIdToDelete}`,
-        { method: "DELETE" }
+      const res = await fetch(
+        `${API_URL}/templates/${selectedTemplateId}/items/${templateItemIdToDelete}`,
+        {
+          method: "DELETE",
+          headers: authHeaders,
+        }
       );
+
+      if (handleAuthError(res)) return;
 
       loadTemplateItems(selectedTemplateId);
     } catch (err) {
@@ -318,10 +397,15 @@ function App() {
     }
 
     try {
-      await fetch(
-        `https://ajanlat-app.onrender.com/projects/${projectId}/add-item/${itemId}?quantity=${quantity}`,
-        { method: "POST" }
+      const res = await fetch(
+        `${API_URL}/projects/${projectId}/add-item/${itemId}?quantity=${quantity}`,
+        {
+          method: "POST",
+          headers: authHeaders,
+        }
       );
+
+      if (handleAuthError(res)) return;
 
       loadProjectItems(projectId);
       loadProjectTotal(projectId);
@@ -342,10 +426,15 @@ function App() {
     }
 
     try {
-      await fetch(
-        `https://ajanlat-app.onrender.com/projects/${projectId}/add-template/${selectedTemplateId}`,
-        { method: "POST" }
+      const res = await fetch(
+        `${API_URL}/projects/${projectId}/add-template/${selectedTemplateId}`,
+        {
+          method: "POST",
+          headers: authHeaders,
+        }
       );
+
+      if (handleAuthError(res)) return;
 
       loadProjectItems(projectId);
       loadProjectTotal(projectId);
@@ -358,10 +447,15 @@ function App() {
     if (!projectId) return;
 
     try {
-      await fetch(
-        `https://ajanlat-app.onrender.com/projects/${projectId}/items/${projectItemId}`,
-        { method: "DELETE" }
+      const res = await fetch(
+        `${API_URL}/projects/${projectId}/items/${projectItemId}`,
+        {
+          method: "DELETE",
+          headers: authHeaders,
+        }
       );
+
+      if (handleAuthError(res)) return;
 
       loadProjectItems(projectId);
       loadProjectTotal(projectId);
@@ -370,52 +464,77 @@ function App() {
     }
   };
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     if (!projectId) {
       alert("Először hozz létre projektet!");
       return;
     }
 
-    window.open(`https://ajanlat-app.onrender.com/projects/${projectId}/export-pdf`, "_blank");
+    try {
+      const res = await fetch(`${API_URL}/projects/${projectId}/export-pdf`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alert("PDF generálás sikertelen.");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `project_${projectId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF export hiba:", err);
+      alert("PDF export sikertelen.");
+    }
   };
 
- const saveCompanyName = async () => {
-  if (!companyName.trim()) {
-    alert("Adj meg cégnév!");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `https://ajanlat-app.onrender.com/settings/company?user_id=${userId}&name=${encodeURIComponent(
-        companyName
-      )}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(companyPhone)}`,
-      {
-        method: "PUT",
-      }
-    );
-
-    const data = await res.json();
-
-    console.log("Cégadat mentés válasz:", data);
-
-    if (!res.ok || data.error) {
-      alert(data.error || "Cégadatok mentése sikertelen.");
+  const saveCompanyName = async () => {
+    if (!companyName.trim()) {
+      alert("Adj meg cégnév!");
       return;
     }
 
-    setCompanyName(data.company_name || "");
-    setCompanyEmail(data.company_email || "");
-    setCompanyPhone(data.company_phone || "");
+    try {
+      const res = await fetch(
+        `${API_URL}/settings/company?name=${encodeURIComponent(
+          companyName
+        )}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(companyPhone)}`,
+        {
+          method: "PUT",
+          headers: authHeaders,
+        }
+      );
 
-    alert("Cégadatok mentve!");
-  } catch (err) {
-    console.error("Cégadatok mentési hiba:", err);
-    alert("Cégadatok mentése sikertelen.");
-  }
-};
+      if (handleAuthError(res)) return;
 
-  
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        alert(data.error || "Cégadatok mentése sikertelen.");
+        return;
+      }
+
+      setCompanyName(data.company_name || "");
+      setCompanyEmail(data.company_email || "");
+      setCompanyPhone(data.company_phone || "");
+
+      alert("Cégadatok mentve!");
+    } catch (err) {
+      console.error("Cégadatok mentési hiba:", err);
+      alert("Cégadatok mentése sikertelen.");
+    }
+  };
 
   return (
     <div>
@@ -584,7 +703,11 @@ function App() {
               </div>
 
               <div className="form-row">
-                <select value={type} onChange={(e) => setType(e.target.value)} className="full-width">
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="full-width"
+                >
                   <option value="work">work</option>
                   <option value="material">material</option>
                 </select>
