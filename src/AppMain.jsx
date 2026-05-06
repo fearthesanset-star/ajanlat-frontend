@@ -90,7 +90,7 @@ function App() {
 
   const loadCompanyName = async () => {
     try {
-      const res = await fetch("https://ajanlat-app.onrender.com/settings/company");
+      const res = await fetch(`https://ajanlat-app.onrender.com/settings/company/${userId}`);
       const data = await res.json();
 
       setCompanyName(data.company_name || "");
@@ -382,9 +382,9 @@ function App() {
 
     try {
       await fetch(
-        `https://ajanlat-app.onrender.com/settings/company?name=${encodeURIComponent(
-          companyName
-        )}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(companyPhone)}`,
+        `https://ajanlat-app.onrender.com/settings/company?user_id=${userId}&name=${encodeURIComponent(
+  companyName
+)}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(companyPhone)}`,
         { method: "PUT" }
       );
 
