@@ -5,6 +5,7 @@ import "./AppMain.css";
 function App() {
   const navigate = useNavigate();
   const userId = localStorage.getItem("user_id");
+  const token = localStorage.getItem("token");
 
   const [items, setItems] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -42,7 +43,11 @@ function App() {
     if (!userId) return;
 
     try {
-      const res = await fetch(`https://ajanlat-app.onrender.com/items/${userId}`);
+      const res = await fetch(`https://ajanlat-app.onrender.com/items/${userId}`, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
       const data = await res.json();
       const safeData = Array.isArray(data) ? data : [];
 
@@ -374,25 +379,43 @@ function App() {
     window.open(`https://ajanlat-app.onrender.com/projects/${projectId}/export-pdf`, "_blank");
   };
 
-  const saveCompanyName = async () => {
-    if (!companyName.trim()) {
-      alert("Adj meg cégnév!");
+ const saveCompanyName = async () => {
+  if (!companyName.trim()) {
+    alert("Adj meg cégnév!");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `https://ajanlat-app.onrender.com/settings/company?user_id=${userId}&name=${encodeURIComponent(
+        companyName
+      )}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(companyPhone)}`,
+      {
+        method: "PUT",
+      }
+    );
+
+    const data = await res.json();
+
+    console.log("Cégadat mentés válasz:", data);
+
+    if (!res.ok || data.error) {
+      alert(data.error || "Cégadatok mentése sikertelen.");
       return;
     }
 
-    try {
-      await fetch(
-        `https://ajanlat-app.onrender.com/settings/company?user_id=${userId}&name=${encodeURIComponent(
-  companyName
-)}&email=${encodeURIComponent(companyEmail)}&phone=${encodeURIComponent(companyPhone)}`,
-        { method: "PUT" }
-      );
+    setCompanyName(data.company_name || "");
+    setCompanyEmail(data.company_email || "");
+    setCompanyPhone(data.company_phone || "");
 
-      alert("Cégadatok mentve!");
-    } catch (err) {
-      console.error("Cégadatok mentési hiba:", err);
-    }
-  };
+    alert("Cégadatok mentve!");
+  } catch (err) {
+    console.error("Cégadatok mentési hiba:", err);
+    alert("Cégadatok mentése sikertelen.");
+  }
+};
+
+  
 
   return (
     <div>

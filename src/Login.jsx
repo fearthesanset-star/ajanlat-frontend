@@ -24,6 +24,7 @@ function Login() {
         alert(data.error);
       } else {
         localStorage.setItem("user_id", data.user_id);
+        localStorage.setItem("token", data.access_token);
         navigate("/app");
       }
     } catch {
