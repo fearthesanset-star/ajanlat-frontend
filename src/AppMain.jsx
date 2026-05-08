@@ -6,10 +6,10 @@ const API_URL = "https://ajanlat-app.onrender.com";
 
 function App() {
   const navigate = useNavigate();
-
   const token = localStorage.getItem("token");
 
   const [items, setItems] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [templateItems, setTemplateItems] = useState([]);
 
@@ -85,6 +85,64 @@ function App() {
     } catch (err) {
       console.error("Item betöltési hiba:", err);
       setItems([]);
+    }
+  };
+
+  const loadProjects = async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_URL}/projects/me`, {
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+      setProjects(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Projekt lista betöltési hiba:", err);
+      setProjects([]);
+    }
+  };
+
+  const selectProject = async (project) => {
+    setProjectId(project.id);
+    setActiveProjectName(project.name);
+    setValidUntil(project.valid_until || "");
+
+    await loadProjectItems(project.id);
+    await loadProjectTotal(project.id);
+  };
+
+  const deleteProject = async (projectToDeleteId) => {
+    const confirmed = window.confirm("Biztosan törlöd ezt a projektet?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_URL}/projects/${projectToDeleteId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alert("Projekt törlése sikertelen.");
+        return;
+      }
+
+      if (projectId === projectToDeleteId) {
+        setProjectId(null);
+        setActiveProjectName("");
+        setProjectItems([]);
+        setProjectTotal(0);
+      }
+
+      await loadProjects();
+    } catch (err) {
+      console.error("Projekt törlési hiba:", err);
+      alert("Projekt törlése sikertelen.");
     }
   };
 
@@ -190,6 +248,7 @@ function App() {
     }
 
     loadItems();
+    loadProjects();
     loadTemplates();
     loadCompanyName();
   }, []);
@@ -283,6 +342,8 @@ function App() {
       setValidUntil("");
       setProjectItems([]);
       setProjectTotal(0);
+
+      await loadProjects();
     } catch (err) {
       console.error("Projekt létrehozási hiba:", err);
     }
@@ -386,7 +447,7 @@ function App() {
 
   const addToProject = async (itemId) => {
     if (!projectId) {
-      alert("Először hozz létre projektet!");
+      alert("Először válassz vagy hozz létre projektet!");
       return;
     }
 
@@ -416,7 +477,7 @@ function App() {
 
   const addTemplateToProject = async () => {
     if (!projectId) {
-      alert("Először hozz létre projektet!");
+      alert("Először válassz vagy hozz létre projektet!");
       return;
     }
 
@@ -466,7 +527,7 @@ function App() {
 
   const exportPdf = async () => {
     if (!projectId) {
-      alert("Először hozz létre projektet!");
+      alert("Először válassz vagy hozz létre projektet!");
       return;
     }
 
@@ -605,6 +666,31 @@ function App() {
             </div>
 
             {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
+          </div>
+
+          <div className="card section-space">
+            <h2>Projekt lista</h2>
+
+            {projects.length === 0 && <p className="muted">Még nincs projekted.</p>}
+
+            <ul>
+              {projects.map((project) => (
+                <li key={project.id}>
+                  <strong>{project.name}</strong>
+                  {project.valid_until && (
+                    <span className="muted"> - érvényes: {project.valid_until}</span>
+                  )}
+
+                  <button onClick={() => selectProject(project)}>
+                    Megnyitás
+                  </button>
+
+                  <button onClick={() => deleteProject(project.id)}>
+                    Törlés
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="card section-space">
@@ -774,7 +860,7 @@ function App() {
           <div className="card section-space">
             <h2>Projekt tételek</h2>
 
-            {!projectId && <p className="muted">Először hozz létre projektet.</p>}
+            {!projectId && <p className="muted">Először válassz vagy hozz létre projektet.</p>}
 
             {projectId && projectItems.length === 0 && (
               <p className="muted">Még nincs tétel a projektben.</p>
