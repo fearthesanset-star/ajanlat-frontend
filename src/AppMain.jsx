@@ -10,8 +10,15 @@ function App() {
 
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [templateItems, setTemplateItems] = useState([]);
+
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
 
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [templateName, setTemplateName] = useState("");
@@ -66,15 +73,11 @@ function App() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_URL}/items/me`, {
-        headers: authHeaders,
-      });
-
+      const res = await fetch(`${API_URL}/items/me`, { headers: authHeaders });
       if (handleAuthError(res)) return;
 
       const data = await res.json();
       const safeData = Array.isArray(data) ? data : [];
-
       setItems(safeData);
 
       const initialQuantities = {};
@@ -92,10 +95,7 @@ function App() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_URL}/projects/me`, {
-        headers: authHeaders,
-      });
-
+      const res = await fetch(`${API_URL}/projects/me`, { headers: authHeaders });
       if (handleAuthError(res)) return;
 
       const data = await res.json();
@@ -106,10 +106,26 @@ function App() {
     }
   };
 
+  const loadCustomers = async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_URL}/customers/me`, { headers: authHeaders });
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+      setCustomers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Ügyfél lista betöltési hiba:", err);
+      setCustomers([]);
+    }
+  };
+
   const selectProject = async (project) => {
     setProjectId(project.id);
     setActiveProjectName(project.name);
     setValidUntil(project.valid_until || "");
+    setSelectedCustomerId(project.customer_id ? String(project.customer_id) : "");
 
     await loadProjectItems(project.id);
     await loadProjectTotal(project.id);
@@ -137,6 +153,7 @@ function App() {
         setActiveProjectName("");
         setProjectItems([]);
         setProjectTotal(0);
+        setSelectedCustomerId("");
       }
 
       await loadProjects();
@@ -146,14 +163,114 @@ function App() {
     }
   };
 
+  const createCustomer = async () => {
+    if (!customerName.trim()) {
+      alert("Adj meg ügyfélnevet!");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/customers`, {
+        method: "POST",
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
+          address: customerAddress,
+        }),
+      });
+
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        alert(data.error || "Ügyfél létrehozása sikertelen.");
+        return;
+      }
+
+      setCustomerName("");
+      setCustomerEmail("");
+      setCustomerPhone("");
+      setCustomerAddress("");
+
+      await loadCustomers();
+    } catch (err) {
+      console.error("Ügyfél létrehozási hiba:", err);
+      alert("Ügyfél létrehozása sikertelen.");
+    }
+  };
+
+  const deleteCustomer = async (customerId) => {
+    const confirmed = window.confirm("Biztosan törlöd ezt az ügyfelet?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_URL}/customers/${customerId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alert("Ügyfél törlése sikertelen.");
+        return;
+      }
+
+      if (selectedCustomerId === String(customerId)) {
+        setSelectedCustomerId("");
+      }
+
+      await loadCustomers();
+      await loadProjects();
+    } catch (err) {
+      console.error("Ügyfél törlési hiba:", err);
+      alert("Ügyfél törlése sikertelen.");
+    }
+  };
+
+  const assignCustomerToProject = async () => {
+    if (!projectId) {
+      alert("Először válassz vagy hozz létre projektet!");
+      return;
+    }
+
+    if (!selectedCustomerId) {
+      alert("Válassz ügyfelet!");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${API_URL}/projects/${projectId}/customer/${selectedCustomerId}`,
+        {
+          method: "PUT",
+          headers: authHeaders,
+        }
+      );
+
+      if (handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alert("Ügyfél hozzárendelése sikertelen.");
+        return;
+      }
+
+      alert("Ügyfél hozzárendelve a projekthez!");
+      await loadProjects();
+    } catch (err) {
+      console.error("Ügyfél hozzárendelési hiba:", err);
+      alert("Ügyfél hozzárendelése sikertelen.");
+    }
+  };
+
   const loadTemplates = async () => {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_URL}/templates/me`, {
-        headers: authHeaders,
-      });
-
+      const res = await fetch(`${API_URL}/templates/me`, { headers: authHeaders });
       if (handleAuthError(res)) return;
 
       const data = await res.json();
@@ -249,6 +366,7 @@ function App() {
 
     loadItems();
     loadProjects();
+    loadCustomers();
     loadTemplates();
     loadCompanyName();
   }, []);
@@ -342,6 +460,7 @@ function App() {
       setValidUntil("");
       setProjectItems([]);
       setProjectTotal(0);
+      setSelectedCustomerId("");
 
       await loadProjects();
     } catch (err) {
@@ -639,6 +758,65 @@ function App() {
           </div>
 
           <div className="card section-space">
+            <h2>Ügyfél létrehozása</h2>
+
+            <div className="inline-row">
+              <input
+                type="text"
+                placeholder="Ügyfél neve"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="medium-input"
+              />
+
+              <input
+                type="email"
+                placeholder="Ügyfél email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                className="medium-input"
+              />
+
+              <input
+                type="text"
+                placeholder="Ügyfél telefon"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="medium-input"
+              />
+
+              <input
+                type="text"
+                placeholder="Ügyfél cím"
+                value={customerAddress}
+                onChange={(e) => setCustomerAddress(e.target.value)}
+                className="medium-input"
+              />
+
+              <button onClick={createCustomer}>Ügyfél mentése</button>
+            </div>
+          </div>
+
+          <div className="card section-space">
+            <h2>Ügyfél lista</h2>
+
+            {customers.length === 0 && <p className="muted">Még nincs ügyfél.</p>}
+
+            <ul>
+              {customers.map((customer) => (
+                <li key={customer.id}>
+                  <strong>{customer.name}</strong>
+                  {customer.email && <span className="muted"> - {customer.email}</span>}
+                  {customer.phone && <span className="muted"> - {customer.phone}</span>}
+                  {customer.address && <span className="muted"> - {customer.address}</span>}
+
+                  <button onClick={() => deleteCustomer(customer.id)}>Törlés</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="card section-space">
             <h2>Projekt létrehozása</h2>
 
             <div className="inline-row">
@@ -669,6 +847,33 @@ function App() {
           </div>
 
           <div className="card section-space">
+            <h2>Ügyfél hozzárendelése aktív projekthez</h2>
+
+            {!projectId && <p className="muted">Először válassz vagy hozz létre projektet.</p>}
+
+            {projectId && (
+              <div className="inline-row">
+                <select
+                  value={selectedCustomerId}
+                  onChange={(e) => setSelectedCustomerId(e.target.value)}
+                  className="medium-input"
+                >
+                  <option value="">-- válassz ügyfelet --</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button onClick={assignCustomerToProject}>
+                  Ügyfél hozzárendelése
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="card section-space">
             <h2>Projekt lista</h2>
 
             {projects.length === 0 && <p className="muted">Még nincs projekted.</p>}
@@ -680,14 +885,12 @@ function App() {
                   {project.valid_until && (
                     <span className="muted"> - érvényes: {project.valid_until}</span>
                   )}
+                  {project.customer_id && (
+                    <span className="muted"> - ügyfél ID: {project.customer_id}</span>
+                  )}
 
-                  <button onClick={() => selectProject(project)}>
-                    Megnyitás
-                  </button>
-
-                  <button onClick={() => deleteProject(project.id)}>
-                    Törlés
-                  </button>
+                  <button onClick={() => selectProject(project)}>Megnyitás</button>
+                  <button onClick={() => deleteProject(project.id)}>Törlés</button>
                 </li>
               ))}
             </ul>
