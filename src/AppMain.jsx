@@ -13,6 +13,8 @@ function App() {
   const [customers, setCustomers] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [templateItems, setTemplateItems] = useState([]);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editingProjectId, setEditingProjectId] = useState(null);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -162,6 +164,53 @@ function App() {
       alert("Projekt törlése sikertelen.");
     }
   };
+
+  const startEditProject = (project) => {
+  setEditingProjectId(project.id);
+
+  setProjectName(project.name);
+  setValidUntil(project.valid_until || "");
+};
+
+const cancelEditProject = () => {
+  setEditingProjectId(null);
+
+  setProjectName("");
+  setValidUntil("");
+};
+
+const updateProject = async () => {
+  try {
+    const res = await fetch(
+      `${API_URL}/projects/${editingProjectId}`,
+      {
+        method: "PUT",
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          name: projectName,
+          valid_until: validUntil,
+        }),
+      }
+    );
+
+    if (handleAuthError(res)) return;
+
+    if (!res.ok) {
+      alert("Projekt módosítása sikertelen.");
+      return;
+    }
+
+    cancelEditProject();
+
+    await loadProjects();
+
+    if (projectId === editingProjectId) {
+      setActiveProjectName(projectName);
+    }
+  } catch (err) {
+    console.error("Projekt update hiba:", err);
+  }
+};
 
   const createCustomer = async () => {
     if (!customerName.trim()) {
@@ -427,6 +476,57 @@ function App() {
       console.error("Item törlési hiba:", err);
     }
   };
+
+  const startEditItem = (item) => {
+  setEditingItemId(item.id);
+
+  setName(item.name);
+  setType(item.type);
+  setUnit(item.unit);
+  setPrice(item.price);
+  setDescription(item.description || "");
+};
+
+const cancelEditItem = () => {
+  setEditingItemId(null);
+
+  setName("");
+  setType("work");
+  setUnit("m2");
+  setPrice("");
+  setDescription("");
+};
+
+const updateItem = async () => {
+  try {
+    const res = await fetch(
+      `${API_URL}/items/${editingItemId}`,
+      {
+        method: "PUT",
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          name,
+          type,
+          unit,
+          price: Number(price),
+          description,
+        }),
+      }
+    );
+
+    if (handleAuthError(res)) return;
+
+    if (!res.ok) {
+      alert("Item módosítása sikertelen.");
+      return;
+    }
+
+    cancelEditItem();
+    loadItems();
+  } catch (err) {
+    console.error("Item update hiba:", err);
+  }
+};
 
   const createProject = async () => {
     if (!projectName.trim()) {
@@ -840,8 +940,19 @@ function App() {
                 </span>
               </div>
 
-              <button onClick={createProject}>Létrehozás</button>
-            </div>
+              {editingProjectId ? (
+  <div className="inline-row">
+    <button onClick={updateProject}>
+      Projekt frissítése
+    </button>
+
+    <button onClick={cancelEditProject}>
+      Mégse
+    </button>
+  </div>
+) : (
+  <button onClick={createProject}>Létrehozás</button>
+)}
 
             {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
           </div>
@@ -890,6 +1001,7 @@ function App() {
                   )}
 
                   <button onClick={() => selectProject(project)}>Megnyitás</button>
+                  <button onClick={() => startEditProject(project)}>Szerkesztés</button>
                   <button onClick={() => deleteProject(project.id)}>Törlés</button>
                 </li>
               ))}
@@ -1032,10 +1144,19 @@ function App() {
                 />
               </div>
 
-              <button type="submit">Mentés</button>
-            </form>
-          </div>
-        </div>
+              {editingItemId ? (
+  <div className="inline-row">
+    <button type="button" onClick={updateItem}>
+      Item frissítése
+    </button>
+
+    <button type="button" onClick={cancelEditItem}>
+      Mégse
+    </button>
+  </div>
+) : (
+  <button type="submit">Mentés</button>
+)}
 
         <div>
           <div className="card">
@@ -1054,6 +1175,7 @@ function App() {
                     className="small-input"
                   />
                   <button onClick={() => addToProject(item.id)}>Projekthez adás</button>
+                  <button onClick={() => startEditItem(item)}>Szerkesztés</button>
                   <button onClick={() => handleDelete(item.id)}>Törlés</button>
                 </li>
               ))}
