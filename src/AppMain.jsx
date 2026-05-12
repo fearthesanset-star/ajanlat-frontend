@@ -1144,19 +1144,20 @@ const updateItem = async () => {
                 />
               </div>
 
-              {editingItemId ? (
-  <div className="inline-row">
-    <button type="button" onClick={updateItem}>
-      Item frissítése
-    </button>
+                              {editingItemId ? (
+                <div className="inline-row">
+                  <button type="button" onClick={updateItem}>
+                    Item frissítése
+                  </button>
 
-    <button type="button" onClick={cancelEditItem}>
-      Mégse
-    </button>
-  </div>
-) : (
-  <button type="submit">Mentés</button>
-)}
+                  <button type="button" onClick={cancelEditItem}>
+                    Mégse
+                  </button>
+                </div>
+              ) : (
+                <button type="submit">Mentés</button>
+              )}
+            </form>
 
         <div>
           <div className="card">
