@@ -2,9 +2,10 @@ body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(59,130,246,0.35), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(168,85,247,0.30), transparent 30%),
-    linear-gradient(135deg, #eff6ff, #eef2ff, #f5f3ff);
+    radial-gradient(circle at 20% 20%, rgba(22, 185, 217, 0.18), transparent 28%),
+    radial-gradient(circle at 80% 25%, rgba(108, 72, 255, 0.24), transparent 30%),
+    radial-gradient(circle at 65% 75%, rgba(255, 255, 255, 0.06), transparent 22%),
+    linear-gradient(135deg, #09143a 0%, #3b31c7 48%, #14b8d4 100%);
   min-height: 100vh;
   color: white;
 }
