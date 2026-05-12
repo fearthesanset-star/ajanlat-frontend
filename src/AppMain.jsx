@@ -13,6 +13,7 @@ function App() {
   const [customers, setCustomers] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [templateItems, setTemplateItems] = useState([]);
+
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingProjectId, setEditingProjectId] = useState(null);
 
@@ -80,6 +81,7 @@ function App() {
 
       const data = await res.json();
       const safeData = Array.isArray(data) ? data : [];
+
       setItems(safeData);
 
       const initialQuantities = {};
@@ -120,198 +122,6 @@ function App() {
     } catch (err) {
       console.error("Ügyfél lista betöltési hiba:", err);
       setCustomers([]);
-    }
-  };
-
-  const selectProject = async (project) => {
-    setProjectId(project.id);
-    setActiveProjectName(project.name);
-    setValidUntil(project.valid_until || "");
-    setSelectedCustomerId(project.customer_id ? String(project.customer_id) : "");
-
-    await loadProjectItems(project.id);
-    await loadProjectTotal(project.id);
-  };
-
-  const deleteProject = async (projectToDeleteId) => {
-    const confirmed = window.confirm("Biztosan törlöd ezt a projektet?");
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`${API_URL}/projects/${projectToDeleteId}`, {
-        method: "DELETE",
-        headers: authHeaders,
-      });
-
-      if (handleAuthError(res)) return;
-
-      if (!res.ok) {
-        alert("Projekt törlése sikertelen.");
-        return;
-      }
-
-      if (projectId === projectToDeleteId) {
-        setProjectId(null);
-        setActiveProjectName("");
-        setProjectItems([]);
-        setProjectTotal(0);
-        setSelectedCustomerId("");
-      }
-
-      await loadProjects();
-    } catch (err) {
-      console.error("Projekt törlési hiba:", err);
-      alert("Projekt törlése sikertelen.");
-    }
-  };
-
-  const startEditProject = (project) => {
-  setEditingProjectId(project.id);
-
-  setProjectName(project.name);
-  setValidUntil(project.valid_until || "");
-};
-
-const cancelEditProject = () => {
-  setEditingProjectId(null);
-
-  setProjectName("");
-  setValidUntil("");
-};
-
-const updateProject = async () => {
-  try {
-    const res = await fetch(
-      `${API_URL}/projects/${editingProjectId}`,
-      {
-        method: "PUT",
-        headers: jsonAuthHeaders,
-        body: JSON.stringify({
-          name: projectName,
-          valid_until: validUntil,
-        }),
-      }
-    );
-
-    if (handleAuthError(res)) return;
-
-    if (!res.ok) {
-      alert("Projekt módosítása sikertelen.");
-      return;
-    }
-
-    cancelEditProject();
-
-    await loadProjects();
-
-    if (projectId === editingProjectId) {
-      setActiveProjectName(projectName);
-    }
-  } catch (err) {
-    console.error("Projekt update hiba:", err);
-  }
-};
-
-  const createCustomer = async () => {
-    if (!customerName.trim()) {
-      alert("Adj meg ügyfélnevet!");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/customers`, {
-        method: "POST",
-        headers: jsonAuthHeaders,
-        body: JSON.stringify({
-          name: customerName,
-          email: customerEmail,
-          phone: customerPhone,
-          address: customerAddress,
-        }),
-      });
-
-      if (handleAuthError(res)) return;
-
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        alert(data.error || "Ügyfél létrehozása sikertelen.");
-        return;
-      }
-
-      setCustomerName("");
-      setCustomerEmail("");
-      setCustomerPhone("");
-      setCustomerAddress("");
-
-      await loadCustomers();
-    } catch (err) {
-      console.error("Ügyfél létrehozási hiba:", err);
-      alert("Ügyfél létrehozása sikertelen.");
-    }
-  };
-
-  const deleteCustomer = async (customerId) => {
-    const confirmed = window.confirm("Biztosan törlöd ezt az ügyfelet?");
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`${API_URL}/customers/${customerId}`, {
-        method: "DELETE",
-        headers: authHeaders,
-      });
-
-      if (handleAuthError(res)) return;
-
-      if (!res.ok) {
-        alert("Ügyfél törlése sikertelen.");
-        return;
-      }
-
-      if (selectedCustomerId === String(customerId)) {
-        setSelectedCustomerId("");
-      }
-
-      await loadCustomers();
-      await loadProjects();
-    } catch (err) {
-      console.error("Ügyfél törlési hiba:", err);
-      alert("Ügyfél törlése sikertelen.");
-    }
-  };
-
-  const assignCustomerToProject = async () => {
-    if (!projectId) {
-      alert("Először válassz vagy hozz létre projektet!");
-      return;
-    }
-
-    if (!selectedCustomerId) {
-      alert("Válassz ügyfelet!");
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `${API_URL}/projects/${projectId}/customer/${selectedCustomerId}`,
-        {
-          method: "PUT",
-          headers: authHeaders,
-        }
-      );
-
-      if (handleAuthError(res)) return;
-
-      if (!res.ok) {
-        alert("Ügyfél hozzárendelése sikertelen.");
-        return;
-      }
-
-      alert("Ügyfél hozzárendelve a projekthez!");
-      await loadProjects();
-    } catch (err) {
-      console.error("Ügyfél hozzárendelési hiba:", err);
-      alert("Ügyfél hozzárendelése sikertelen.");
     }
   };
 
@@ -420,113 +230,15 @@ const updateProject = async () => {
     loadCompanyName();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const selectProject = async (project) => {
+    setProjectId(project.id);
+    setActiveProjectName(project.name);
+    setValidUntil(project.valid_until || "");
+    setSelectedCustomerId(project.customer_id ? String(project.customer_id) : "");
 
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/items`, {
-        method: "POST",
-        headers: jsonAuthHeaders,
-        body: JSON.stringify({
-          name,
-          type,
-          unit,
-          price: Number(price),
-          description,
-        }),
-      });
-
-      if (handleAuthError(res)) return;
-
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        alert(data.error || "Item mentése sikertelen.");
-        return;
-      }
-
-      setName("");
-      setType("work");
-      setUnit("m2");
-      setPrice("");
-      setDescription("");
-
-      loadItems();
-    } catch (err) {
-      console.error("Item mentési hiba:", err);
-    }
+    await loadProjectItems(project.id);
+    await loadProjectTotal(project.id);
   };
-
-  const handleDelete = async (itemId) => {
-    try {
-      const res = await fetch(`${API_URL}/items/${itemId}`, {
-        method: "DELETE",
-        headers: authHeaders,
-      });
-
-      if (handleAuthError(res)) return;
-
-      loadItems();
-    } catch (err) {
-      console.error("Item törlési hiba:", err);
-    }
-  };
-
-  const startEditItem = (item) => {
-  setEditingItemId(item.id);
-
-  setName(item.name);
-  setType(item.type);
-  setUnit(item.unit);
-  setPrice(item.price);
-  setDescription(item.description || "");
-};
-
-const cancelEditItem = () => {
-  setEditingItemId(null);
-
-  setName("");
-  setType("work");
-  setUnit("m2");
-  setPrice("");
-  setDescription("");
-};
-
-const updateItem = async () => {
-  try {
-    const res = await fetch(
-      `${API_URL}/items/${editingItemId}`,
-      {
-        method: "PUT",
-        headers: jsonAuthHeaders,
-        body: JSON.stringify({
-          name,
-          type,
-          unit,
-          price: Number(price),
-          description,
-        }),
-      }
-    );
-
-    if (handleAuthError(res)) return;
-
-    if (!res.ok) {
-      alert("Item módosítása sikertelen.");
-      return;
-    }
-
-    cancelEditItem();
-    loadItems();
-  } catch (err) {
-    console.error("Item update hiba:", err);
-  }
-};
 
   const createProject = async () => {
     if (!projectName.trim()) {
@@ -565,6 +277,193 @@ const updateItem = async () => {
       await loadProjects();
     } catch (err) {
       console.error("Projekt létrehozási hiba:", err);
+    }
+  };
+
+  const startEditProject = (project) => {
+    setEditingProjectId(project.id);
+    setProjectName(project.name);
+    setValidUntil(project.valid_until || "");
+  };
+
+  const cancelEditProject = () => {
+    setEditingProjectId(null);
+    setProjectName("");
+    setValidUntil("");
+  };
+
+  const updateProject = async () => {
+    if (!projectName.trim()) {
+      alert("Adj meg projektnevet!");
+      return;
+    }
+
+    try {
+      const currentEditingId = editingProjectId;
+
+      const res = await fetch(`${API_URL}/projects/${currentEditingId}`, {
+        method: "PUT",
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          name: projectName,
+          valid_until: validUntil,
+        }),
+      });
+
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        alert(data.error || "Projekt módosítása sikertelen.");
+        return;
+      }
+
+      if (projectId === currentEditingId) {
+        setActiveProjectName(data.name);
+        setValidUntil(data.valid_until || "");
+      }
+
+      cancelEditProject();
+      await loadProjects();
+    } catch (err) {
+      console.error("Projekt update hiba:", err);
+      alert("Projekt módosítása sikertelen.");
+    }
+  };
+
+  const deleteProject = async (projectToDeleteId) => {
+    const confirmed = window.confirm("Biztosan törlöd ezt a projektet?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_URL}/projects/${projectToDeleteId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alert("Projekt törlése sikertelen.");
+        return;
+      }
+
+      if (projectId === projectToDeleteId) {
+        setProjectId(null);
+        setActiveProjectName("");
+        setProjectItems([]);
+        setProjectTotal(0);
+        setSelectedCustomerId("");
+      }
+
+      await loadProjects();
+    } catch (err) {
+      console.error("Projekt törlési hiba:", err);
+      alert("Projekt törlése sikertelen.");
+    }
+  };
+
+  const createCustomer = async () => {
+    if (!customerName.trim()) {
+      alert("Adj meg ügyfélnevet!");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/customers`, {
+        method: "POST",
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
+          address: customerAddress,
+        }),
+      });
+
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        alert(data.error || "Ügyfél létrehozása sikertelen.");
+        return;
+      }
+
+      setCustomerName("");
+      setCustomerEmail("");
+      setCustomerPhone("");
+      setCustomerAddress("");
+
+      await loadCustomers();
+    } catch (err) {
+      console.error("Ügyfél létrehozási hiba:", err);
+      alert("Ügyfél létrehozása sikertelen.");
+    }
+  };
+
+  const deleteCustomer = async (customerId) => {
+    const confirmed = window.confirm("Biztosan törlöd ezt az ügyfelet?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_URL}/customers/${customerId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alert("Ügyfél törlése sikertelen.");
+        return;
+      }
+
+      if (selectedCustomerId === String(customerId)) {
+        setSelectedCustomerId("");
+      }
+
+      await loadCustomers();
+      await loadProjects();
+    } catch (err) {
+      console.error("Ügyfél törlési hiba:", err);
+      alert("Ügyfél törlése sikertelen.");
+    }
+  };
+
+  const assignCustomerToProject = async () => {
+    if (!projectId) {
+      alert("Először válassz vagy hozz létre projektet!");
+      return;
+    }
+
+    if (!selectedCustomerId) {
+      alert("Válassz ügyfelet!");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${API_URL}/projects/${projectId}/customer/${selectedCustomerId}`,
+        {
+          method: "PUT",
+          headers: authHeaders,
+        }
+      );
+
+      if (handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alert("Ügyfél hozzárendelése sikertelen.");
+        return;
+      }
+
+      alert("Ügyfél hozzárendelve a projekthez!");
+      await loadProjects();
+    } catch (err) {
+      console.error("Ügyfél hozzárendelési hiba:", err);
+      alert("Ügyfél hozzárendelése sikertelen.");
     }
   };
 
@@ -654,6 +553,112 @@ const updateItem = async () => {
       loadTemplateItems(selectedTemplateId);
     } catch (err) {
       console.error("Sablon item törlési hiba:", err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/items`, {
+        method: "POST",
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          name,
+          type,
+          unit,
+          price: Number(price),
+          description,
+        }),
+      });
+
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        alert(data.error || "Item mentése sikertelen.");
+        return;
+      }
+
+      setName("");
+      setType("work");
+      setUnit("m2");
+      setPrice("");
+      setDescription("");
+
+      loadItems();
+    } catch (err) {
+      console.error("Item mentési hiba:", err);
+    }
+  };
+
+  const startEditItem = (item) => {
+    setEditingItemId(item.id);
+    setName(item.name);
+    setType(item.type);
+    setUnit(item.unit);
+    setPrice(item.price);
+    setDescription(item.description || "");
+  };
+
+  const cancelEditItem = () => {
+    setEditingItemId(null);
+    setName("");
+    setType("work");
+    setUnit("m2");
+    setPrice("");
+    setDescription("");
+  };
+
+  const updateItem = async () => {
+    try {
+      const res = await fetch(`${API_URL}/items/${editingItemId}`, {
+        method: "PUT",
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          name,
+          type,
+          unit,
+          price: Number(price),
+          description,
+        }),
+      });
+
+      if (handleAuthError(res)) return;
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        alert(data.error || "Item módosítása sikertelen.");
+        return;
+      }
+
+      cancelEditItem();
+      loadItems();
+    } catch (err) {
+      console.error("Item update hiba:", err);
+      alert("Item módosítása sikertelen.");
+    }
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      const res = await fetch(`${API_URL}/items/${itemId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+
+      if (handleAuthError(res)) return;
+
+      loadItems();
+    } catch (err) {
+      console.error("Item törlési hiba:", err);
     }
   };
 
@@ -917,7 +922,7 @@ const updateItem = async () => {
           </div>
 
           <div className="card section-space">
-            <h2>Projekt létrehozása</h2>
+            <h2>{editingProjectId ? "Projekt szerkesztése" : "Projekt létrehozása"}</h2>
 
             <div className="inline-row">
               <input
@@ -941,18 +946,14 @@ const updateItem = async () => {
               </div>
 
               {editingProjectId ? (
-  <div className="inline-row">
-    <button onClick={updateProject}>
-      Projekt frissítése
-    </button>
-
-    <button onClick={cancelEditProject}>
-      Mégse
-    </button>
-  </div>
-) : (
-  <button onClick={createProject}>Létrehozás</button>
-)}
+                <div className="inline-row">
+                  <button onClick={updateProject}>Projekt frissítése</button>
+                  <button onClick={cancelEditProject}>Mégse</button>
+                </div>
+              ) : (
+                <button onClick={createProject}>Létrehozás</button>
+              )}
+            </div>
 
             {projectId && <p className="muted">Aktív projekt: {activeProjectName}</p>}
           </div>
@@ -1090,7 +1091,7 @@ const updateItem = async () => {
           </div>
 
           <div className="card section-space">
-            <h2>Új item</h2>
+            <h2>{editingItemId ? "Item szerkesztése" : "Új item"}</h2>
 
             <form onSubmit={handleSubmit}>
               <div className="form-row">
@@ -1144,7 +1145,7 @@ const updateItem = async () => {
                 />
               </div>
 
-                              {editingItemId ? (
+              {editingItemId ? (
                 <div className="inline-row">
                   <button type="button" onClick={updateItem}>
                     Item frissítése
@@ -1158,6 +1159,8 @@ const updateItem = async () => {
                 <button type="submit">Mentés</button>
               )}
             </form>
+          </div>
+        </div>
 
         <div>
           <div className="card">
