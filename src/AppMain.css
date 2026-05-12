@@ -2,9 +2,9 @@ body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
   background:
-    radial-gradient(circle at top left, #312e81, transparent 35%),
-    radial-gradient(circle at bottom right, #1d4ed8, transparent 35%),
-    linear-gradient(135deg, #0f172a, #111827);
+    radial-gradient(circle at top left, rgba(59,130,246,0.35), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(168,85,247,0.30), transparent 30%),
+    linear-gradient(135deg, #eff6ff, #eef2ff, #f5f3ff);
   min-height: 100vh;
   color: white;
 }
